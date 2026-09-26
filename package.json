@@ -1,0 +1,14 @@
+{
+  "name": "party-dash",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Worldwide 2-4 player cartoon board game",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  }
+}
