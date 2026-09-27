@@ -1,1 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Party Dash 🌈</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="app">
+    <section id="home" class="screen">
+      <div class="logo">PARTY <span>DASH</span> 🎲</div>
+      <p class="tagline">A tiny worldwide board game for 2–4 friends.</p>
 
+      <div class="card">
+        <label>Your nickname</label>
+        <input id="name" maxlength="16" placeholder="RainbowFox">
+        <div class="row">
+          <button id="create" class="primary">Create room</button>
+          <button id="showJoin" class="secondary">Join room</button>
+        </div>
+
+        <div id="joinBox" class="hidden">
+          <label>Room code</label>
+          <input id="code" maxlength="5" placeholder="ABCDE" autocomplete="off">
+          <button id="join" class="primary full">Join</button>
+        </div>
+        <p id="homeMsg" class="msg"></p>
+      </div>
+      <p class="small">Works in modern browsers on phones, tablets and computers.</p>
+    </section>
+
+    <section id="room" class="screen hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">ROOM</div>
+          <div id="roomCode" class="roomCode">-----</div>
+        </div>
+        <button id="copy" class="secondary">Copy code</button>
+      </div>
+
+      <div class="card">
+        <h2>Players</h2>
+        <div id="players" class="players"></div>
+        <button id="start" class="primary full">Start game</button>
+        <p id="roomMsg" class="msg"></p>
+      </div>
+      <button id="leave" class="textButton">Leave room</button>
+    </section>
+
+    <section id="game" class="screen hidden">
+      <div class="gameHeader">
+        <div>
+          <div class="eyebrow">PARTY DASH</div>
+          <div id="turnText">Waiting…</div>
+        </div>
+        <div id="rollValue" class="die">?</div>
+      </div>
+
+      <div class="boardWrap">
+        <div id="board" class="board"></div>
+      </div>
+
+      <div class="card compact">
+        <div id="scoreboard" class="scoreboard"></div>
+        <button id="roll" class="primary full">🎲 Roll dice</button>
+        <button id="again" class="secondary full hidden">Play again</button>
+        <p id="gameMsg" class="msg"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/game.js"></script>
+</body>
+</html>
