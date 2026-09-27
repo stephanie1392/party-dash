@@ -11,7 +11,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.send(`
+    <h1>Party Dash Server Test</h1>
+    <p>Server is working!</p>
+    <p>Directory: ${__dirname}</p>
+    <p>Looking for: ${path.join(__dirname, "public", "index.html")}</p>
+  `);
 });
 
 const rooms = new Map();
