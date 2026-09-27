@@ -10,6 +10,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 const rooms = new Map();
 const COLORS = ["#ff5c7a", "#45aaf2", "#26de81", "#fed330"];
 
