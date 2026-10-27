@@ -138,7 +138,8 @@ function renderBoard(s) {
         token.style.background = p.color;
         token.style.left = `${5 + (idx % 2) * 35}%`;
         token.style.top = `${5 + Math.floor(idx / 2) * 38}%`;
-        token.textContent = String(idx + 1);
+       token.textContent = ["🐸", "🦊", "🐼", "🐸"][idx] || "⭐";
+token.title = p.name;
         tile.appendChild(token);
       }
     });
