@@ -146,7 +146,7 @@ io.to(player.id).emit("matchStarted", {
     : undefined,
   players: publicPlayers(match)
 });
-
+  }
 
   sendChat(match, "Game Host", "The investigation begins! Ask questions to find the thief.", true);
 
