@@ -31,16 +31,23 @@ function cleanName(value) {
   return String(value || "Player").trim().slice(0, 16) || "Player";
 }
 
+
 function publicPlayers(match, reveal = false) {
   return match.players.map(p => ({
     id: p.id,
     name: p.name,
     isBot: p.isBot,
     score: scores.get(p.name) || 0,
+
+    // The Minister is publicly identified.
+    publicRole: p.role === "Minister" ? "Minister" : undefined,
+
+    // Only reveal all roles at the end of the round.
     role: reveal ? p.role : undefined,
     roleRevealed: reveal
   }));
 }
+
 
 function sendUpdate(match, phase, canAccuse = true) {
   for (const p of match.players) {
@@ -130,12 +137,16 @@ function startMatch(humans) {
 
   for (const player of match.players) {
     if (player.isBot) continue;
-    io.to(player.id).emit("matchStarted", {
-      round: match.round,
-      myRole: player.role,
-      players: publicPlayers(match)
-    });
-  }
+    
+io.to(player.id).emit("matchStarted", {
+  round: match.round,
+  myRole: player.role,
+  policeId: player.role === "Minister"
+    ? match.players.find(p => p.role === "Police")?.id
+    : undefined,
+  players: publicPlayers(match)
+});
+
 
   sendChat(match, "Game Host", "The investigation begins! Ask questions to find the thief.", true);
 
