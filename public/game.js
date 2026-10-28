@@ -7,12 +7,14 @@ let currentGame = null;
 let myRole = null;
 let hasResult = false;
 
+
 const roleInfo = {
-  King: { emoji: "👑", hint: "You are the King. Observe the investigation." },
-  Minister: { emoji: "📜", hint: "Help discover the real thief. Your points depend on your guess." },
-  Police: { emoji: "🚔", hint: "Investigate the players and help catch the thief." },
-  Thief: { emoji: "🦊", hint: "Keep your identity secret and try not to get caught." }
+  King: { emoji: "🤴", hint: "You are the King. Observe the investigation." },
+  Minister: { emoji: "🤵", hint: "Help discover the real thief. Your points depend on your guess." },
+  Police: { emoji: "👮", hint: "Investigate the players and help catch the thief." },
+  Thief: { emoji: "😈", hint: "Keep your identity secret and try not to get caught." }
 };
+
 
 function showScreen(id) {
   ["home", "waiting", "game"].forEach(screen => {
