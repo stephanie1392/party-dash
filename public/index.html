@@ -1,71 +1,96 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Party Dash 🌈</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff3d6">
+  <title>Find the Thief 👑</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main class="app">
     <section id="home" class="screen">
-      <div class="logo">🎲 PARTY <span>DASH</span> 🌈</div>
-      <p class="tagline">A tiny worldwide board game for 2–4 friends.</p>
+      <div class="logo">👑 FIND THE THIEF 🕵️</div>
+      <p class="tagline">A childhood classic. Now played worldwide!</p>
 
       <div class="card">
-        <label>Your nickname</label>
-        <input id="name" maxlength="16" placeholder="RainbowFox">
-        <div class="row">
-          <button id="create" class="primary">Create room</button>
-          <button id="showJoin" class="secondary">Join room</button>
-        </div>
+        <h1>Ready to investigate?</h1>
+        <p>Meet the King, Minister, Police and Thief.</p>
 
-        <div id="joinBox" class="hidden">
-          <label>Room code</label>
-          <input id="code" maxlength="5" placeholder="ABCDE" autocomplete="off">
-          <button id="join" class="primary full">Join</button>
-        </div>
-        <p id="homeMsg" class="msg"></p>
+        <label for="name">Your nickname</label>
+        <input id="name" maxlength="16" placeholder="Enter your nickname" autocomplete="nickname">
+
+        <button id="play" class="primary full">🎮 Play Now</button>
+        <p id="homeMsg" class="msg" aria-live="polite"></p>
       </div>
-      <p class="small">Works in modern browsers on phones, tablets and computers.</p>
+
+      <div class="role-grid">
+        <div class="role-card"><span>👑</span><strong>King</strong></div>
+        <div class="role-card"><span>📜</span><strong>Minister</strong></div>
+        <div class="role-card"><span>🚔</span><strong>Police</strong></div>
+        <div class="role-card"><span>🦊</span><strong>Thief</strong></div>
+      </div>
+      <p class="small">No rooms. No codes. Just play!</p>
     </section>
 
-    <section id="room" class="screen hidden">
-      <div class="topbar">
-        <div>
-          <div class="eyebrow">ROOM</div>
-          <div id="roomCode" class="roomCode">-----</div>
-        </div>
-        <button id="copy" class="secondary">Copy code</button>
-      </div>
-
+    <section id="waiting" class="screen hidden">
+      <div class="logo">🔎 Finding your game...</div>
       <div class="card">
-        <h2>Players</h2>
-        <div id="players" class="players"></div>
-        <button id="start" class="primary full">Start game</button>
-        <p id="roomMsg" class="msg"></p>
+        <div class="loader">🎲</div>
+        <h2>Preparing your investigation</h2>
+        <p id="waitingMsg" class="msg" aria-live="polite">
+          Looking for other players...
+        </p>
+        <p>If nobody joins, computer players will fill the empty seats.</p>
+        <button id="cancel" class="secondary full">Cancel</button>
       </div>
-      <button id="leave" class="textButton">Leave room</button>
     </section>
 
     <section id="game" class="screen hidden">
-      <div class="gameHeader">
+      <header class="game-header">
         <div>
-          <div class="eyebrow">PARTY DASH</div>
-          <div id="turnText">Waiting…</div>
+          <div class="eyebrow">THE ROYAL MYSTERY</div>
+          <h1>Find the Thief</h1>
         </div>
-        <div id="rollValue" class="die">?</div>
+        <button id="homeButton" class="secondary">Home</button>
+      </header>
+
+      <div class="card role-reveal">
+        <p class="eyebrow">YOUR SECRET ROLE</p>
+        <div id="myRoleEmoji" class="role-emoji">❓</div>
+        <h2 id="myRole">Waiting for your role...</h2>
+        <p id="roleHint">Your role will appear here.</p>
       </div>
 
-      <div class="boardWrap">
-        <div id="board" class="board"></div>
+      <div class="card">
+        <h2>🧑‍🤝‍🧑 The Players</h2>
+        <p id="roundStatus" class="msg" aria-live="polite">Preparing game...</p>
+        <div id="players" class="players"></div>
       </div>
 
-      <div class="card compact">
+      <div class="card">
+        <h2>💬 Investigation</h2>
+        <p>Ask questions and discuss who might be the thief.</p>
+        <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" maxlength="200" placeholder="Ask a question..." autocomplete="off">
+          <button class="primary" type="submit">Send</button>
+        </form>
+      </div>
+
+      <div id="guessPanel" class="card hidden">
+        <h2>🕵️ Who is the Thief?</h2>
+        <p>Choose the player you believe is the thief.</p>
+        <div id="suspectButtons" class="suspect-buttons"></div>
+      </div>
+
+      <div id="resultPanel" class="card hidden">
+        <h2 id="resultTitle">Round complete!</h2>
+        <p id="resultText"></p>
+        <h3>🏆 Scores</h3>
         <div id="scoreboard" class="scoreboard"></div>
-        <button id="roll" class="primary full">🎲 Roll dice</button>
-        <button id="again" class="secondary full hidden">Play again</button>
-        <p id="gameMsg" class="msg"></p>
+        <button id="again" class="primary full">🔄 Play Another Round</button>
       </div>
     </section>
   </main>
