@@ -1,152 +1,232 @@
+
 const socket = io();
-
 const $ = id => document.getElementById(id);
-const home = $("home"), room = $("room"), game = $("game");
+
 let myId = null;
-let state = null;
+let currentGame = null;
+let myRole = null;
+let hasResult = false;
 
-socket.on("connect", () => myId = socket.id);
+const roleInfo = {
+  King: { emoji: "👑", hint: "You are the King. Observe the investigation." },
+  Minister: { emoji: "📜", hint: "Help discover the real thief. Your points depend on your guess." },
+  Police: { emoji: "🚔", hint: "Investigate the players and help catch the thief." },
+  Thief: { emoji: "🦊", hint: "Keep your identity secret and try not to get caught." }
+};
 
-function show(screen) {
-  [home, room, game].forEach(x => x.classList.add("hidden"));
-  screen.classList.remove("hidden");
+function showScreen(id) {
+  ["home", "waiting", "game"].forEach(screen => {
+    $(screen).classList.toggle("hidden", screen !== id);
+  });
 }
-function nameValue() {
-  return ($("name").value.trim() || "Player").slice(0, 16);
+
+function setMessage(id, message) {
+  $(id).textContent = message || "";
 }
-function msg(el, text) { el.textContent = text || ""; }
 
-$("showJoin").onclick = () => $("joinBox").classList.toggle("hidden");
+function safeText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
 
-$("create").onclick = () => {
-  socket.emit("createRoom", { name: nameValue() }, result => {
-    if (!result.ok) return msg($("homeMsg"), result.error);
-    $("roomCode").textContent = result.code;
-    show(room);
-  });
-};
-
-$("join").onclick = () => {
-  const code = $("code").value.trim().toUpperCase();
-  socket.emit("joinRoom", { code, name: nameValue() }, result => {
-    if (!result.ok) return msg($("homeMsg"), result.error);
-    $("roomCode").textContent = result.code;
-    show(room);
-  });
-};
-
-$("copy").onclick = async () => {
-  await navigator.clipboard?.writeText(state?.code || "");
-  msg($("roomMsg"), "Room code copied!");
-};
-
-$("start").onclick = () => {
-  socket.emit("startGame", result => {
-    if (!result?.ok) msg($("roomMsg"), result?.error);
-  });
-};
-
-$("roll").onclick = () => {
-  $("roll").disabled = true;
-  socket.emit("roll", result => {
-    if (!result.ok) {
-      msg($("gameMsg"), result.error);
-      $("roll").disabled = false;
-    }
-  });
-};
-
-$("again").onclick = () => socket.emit("playAgain");
-
-$("leave").onclick = () => location.reload();
-
-socket.on("rolled", ({ playerId, roll }) => {
-  $("rollValue").textContent = roll;
+socket.on("connect", () => {
+  myId = socket.id;
 });
 
-socket.on("state", next => {
-  state = next;
-  if (!next.started) {
-    $("roomCode").textContent = next.code;
-    renderRoom(next);
-    show(room);
-  } else {
-    renderGame(next);
-    show(game);
-  }
+socket.on("connect_error", () => {
+  setMessage("homeMsg", "Connection problem. Please refresh and try again.");
 });
 
-function renderRoom(s) {
-  $("players").innerHTML = s.players.map((p, i) => `
-    <div class="playerRow">
-      <span class="dot" style="background:${p.color}"></span>
-      <span>${escapeHtml(p.name)}</span>
-      ${p.id === myId ? '<span class="badge">YOU</span>' : ""}
-    </div>
-  `).join("");
-  $("start").disabled = s.players.length < 2;
-  $("start").textContent = s.players.length < 2 ? "Waiting for 2 players…" : "Start game";
-}
-
-function renderGame(s) {
-  const current = s.players[s.turn];
-  const mine = current?.id === myId;
-  $("turnText").textContent = s.winner
-    ? `🏆 ${s.players.find(p => p.id === s.winner)?.name || "Someone"} wins!`
-    : mine ? "🎯 Your turn!" : `⏳ ${current?.name || "Player"} is rolling…`;
-
-  $("roll").disabled = !mine || !!s.winner;
-  $("roll").classList.toggle("hidden", !!s.winner);
-  $("again").classList.toggle("hidden", !s.winner);
-
-  if (s.winner) {
-    msg($("gameMsg"), "Great game! Start another round when you're ready.");
-  } else {
-    msg($("gameMsg"), "");
-  }
-
-  renderBoard(s);
-  $("scoreboard").innerHTML = s.players.map(p => `
-    <div class="score" style="outline:${p.id === current?.id ? "3px solid " + p.color : "none"}">
-      <strong>${escapeHtml(p.name)}</strong>
-      <span>📍 ${p.position}/30 · 🪙 ${p.coins}</span>
-    </div>
-  `).join("");
-}
-
-function renderBoard(s) {
-  const board = $("board");
-  board.innerHTML = "";
-  const positions = s.players.map(p => p.position);
-
-  for (let i = 0; i < 31; i++) {
-    const tile = document.createElement("div");
-    tile.className = "tile" + (i === 30 ? " finish" : "");
-    tile.textContent = i === 0 ? "START" : i === 30 ? "🏁" : i;
-    tile.style.gridColumn = String((i % 10) + 1);
-    tile.style.gridRow = String(Math.floor(i / 10) + 1);
-
-    // Snake-like row order for a more board-game feel.
-    if (Math.floor(i / 10) % 2 === 1) {
-      tile.style.gridColumn = String(10 - (i % 10));
+$("play").addEventListener("click", () => {
+  const name = ($("name").value.trim() || "Player").slice(0, 16);
+  $("play").disabled = true;
+  setMessage("homeMsg", "Connecting to the game...");
+  socket.emit("playNow", { name }, result => {
+    $("play").disabled = false;
+    if (!result?.ok) {
+      setMessage("homeMsg", result?.error || "Could not start a game.");
+      return;
     }
+    showScreen("waiting");
+    setMessage("waitingMsg", "Looking for players. Computer players will fill empty seats.");
+  });
+});
 
-    s.players.forEach((p, idx) => {
-      if (p.position === i) {
-        const token = document.createElement("div");
-        token.className = "token";
-        token.style.background = p.color;
-        token.style.left = `${5 + (idx % 2) * 35}%`;
-        token.style.top = `${5 + Math.floor(idx / 2) * 38}%`;
-       token.textContent = ["🐸", "🦊", "🐼", "🐸"][idx] || "⭐";
-token.title = p.name;
-        tile.appendChild(token);
-      }
+$("cancel").addEventListener("click", () => {
+  socket.emit("cancelMatch");
+  showScreen("home");
+  setMessage("homeMsg", "Matchmaking cancelled.");
+});
+
+$("homeButton").addEventListener("click", () => {
+  socket.emit("leaveMatch");
+  currentGame = null;
+  myRole = null;
+  hasResult = false;
+  showScreen("home");
+});
+
+$("chatForm").addEventListener("submit", event => {
+  event.preventDefault();
+  const input = $("chatInput");
+  const message = input.value.trim();
+  if (!message || !currentGame || hasResult) return;
+
+  socket.emit("sendChat", { message }, result => {
+    if (!result?.ok) {
+      setMessage("roundStatus", result?.error || "Message could not be sent.");
+    }
+  });
+  input.value = "";
+  input.focus();
+});
+
+$("again").addEventListener("click", () => {
+  $("again").disabled = true;
+  socket.emit("playAgain", result => {
+    $("again").disabled = false;
+    if (result && !result.ok) {
+      setMessage("roundStatus", result.error || "Could not start another round.");
+    }
+  });
+});
+
+socket.on("matchWaiting", data => {
+  showScreen("waiting");
+  setMessage("waitingMsg", data?.message || "Finding players...");
+});
+
+socket.on("matchStarted", data => {
+  currentGame = data;
+  myRole = data.myRole;
+  hasResult = false;
+
+  const role = roleInfo[myRole] || { emoji: "❓", hint: "Keep your role secret." };
+  $("myRoleEmoji").textContent = role.emoji;
+  $("myRole").textContent = myRole || "Unknown";
+  $("roleHint").textContent = role.hint;
+
+  $("chatMessages").innerHTML = "";
+  $("resultPanel").classList.add("hidden");
+  $("guessPanel").classList.add("hidden");
+  $("chatInput").disabled = false;
+
+  showScreen("game");
+  renderPlayers(data.players || []);
+  setMessage("roundStatus", "Round " + (data.round || 1) + " has started. Ask questions and investigate!");
+});
+
+socket.on("gameUpdate", data => {
+  if (!currentGame) return;
+  currentGame = { ...currentGame, ...data };
+  if (data.players) renderPlayers(data.players);
+  if (data.phase) setMessage("roundStatus", data.phase);
+  if (data.canAccuse) renderSuspects(data.players || []);
+});
+
+socket.on("chatMessage", message => {
+  addChatMessage(message);
+});
+
+socket.on("roundResult", result => {
+  hasResult = true;
+  $("guessPanel").classList.add("hidden");
+  $("resultPanel").classList.remove("hidden");
+  $("chatInput").disabled = true;
+
+  $("resultTitle").textContent = result.caught
+    ? "🎉 The Thief Was Caught!"
+    : "🦊 The Thief Escaped!";
+
+  $("resultText").textContent = result.message || "The roles have been revealed.";
+  $("scoreboard").innerHTML = (result.players || []).map(player => `
+    <div class="score">
+      <strong>${safeText(player.name)}</strong>
+      <span>${safeText(player.role || "Player")} · 🏆 ${Number(player.score) || 0} points</span>
+    </div>
+  `).join("");
+
+  (result.players || []).forEach(player => {
+    addChatMessage({
+      system: true,
+      message: `${player.name} was ${player.role}.`
     });
-    board.appendChild(tile);
-  }
+  });
+});
+
+socket.on("gameError", data => {
+  setMessage("roundStatus", data?.message || "Something went wrong.");
+});
+
+function renderPlayers(players) {
+  $("players").innerHTML = players.map(player => {
+    const isMe = player.id === myId;
+    const computer = player.isBot ? " 🤖" : "";
+    const roleLabel = player.roleRevealed && player.role
+      ? " · " + safeText(player.role)
+      : "";
+
+    return `
+      <div class="playerRow">
+        <span class="dot"></span>
+        <span>${safeText(player.name)}${computer}${isMe ? " (YOU)" : ""}${roleLabel}</span>
+        <span class="playerScore">${Number(player.score) || 0} pts</span>
+      </div>
+    `;
+  }).join("");
 }
 
-function escapeHtml(text) {
-  return text.replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[c]));
+function renderSuspects(players) {
+  const panel = $("guessPanel");
+  panel.classList.remove("hidden");
+
+  $("suspectButtons").innerHTML = players
+    .filter(player => player.id !== myId)
+    .map(player => `
+      <button class="secondary suspect" data-id="${safeText(player.id)}">
+        🕵️ ${safeText(player.name)}
+      </button>
+    `).join("");
+
+  $("suspectButtons").querySelectorAll("button").forEach(button => {
+    button.addEventListener("click", () => {
+      if (hasResult) return;
+      const confirmed = window.confirm("Accuse this player of being the Thief?");
+      if (!confirmed) return;
+
+      $("suspectButtons").querySelectorAll("button").forEach(item => {
+        item.disabled = true;
+      });
+
+      socket.emit("accuse", { suspectId: button.dataset.id }, result => {
+        if (!result?.ok) {
+          setMessage("roundStatus", result?.error || "Accusation failed.");
+          $("suspectButtons").querySelectorAll("button").forEach(item => {
+            item.disabled = false;
+          });
+        }
+      });
+    });
+  });
+}
+
+function addChatMessage(data) {
+  const container = $("chatMessages");
+  const item = document.createElement("div");
+  item.className = data?.system ? "chat-message system" : "chat-message";
+
+  if (data?.system) {
+    item.textContent = data.message || "";
+  } else {
+    const author = document.createElement("strong");
+    author.textContent = (data?.name || "Player") + ": ";
+    const text = document.createElement("span");
+    text.textContent = data?.message || "";
+    item.append(author, text);
+  }
+
+  container.appendChild(item);
+  container.scrollTop = container.scrollHeight;
 }
