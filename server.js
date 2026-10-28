@@ -21,7 +21,6 @@ const ROLE_INFO = [
   { role: "Thief", emoji: "😈" }
 ];
 
-
 const queue = [];
 const matches = new Map();
 const scores = new Map();
