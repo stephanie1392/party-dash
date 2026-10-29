@@ -43,8 +43,7 @@ socket.on("connect_error", () => {
 
 
 $("play").addEventListener("click", () => {
-  const name = ($("name").value.trim() || makeRandomNickname()).slice(0, 16);
-  localStorage.setItem("findTheThiefNickname", name);
+const name = "Player" + Math.floor(1000 + Math.random() * 9000);
 
   $("play").disabled = true;
   setMessage("homeMsg", "Connecting to the game...");
