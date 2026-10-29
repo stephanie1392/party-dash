@@ -41,20 +41,27 @@ socket.on("connect_error", () => {
   setMessage("homeMsg", "Connection problem. Please refresh and try again.");
 });
 
+
 $("play").addEventListener("click", () => {
-  const name = ($("name").value.trim() || "Player").slice(0, 16);
+  const name = ($("name").value.trim() || makeRandomNickname()).slice(0, 16);
+  localStorage.setItem("findTheThiefNickname", name);
+
   $("play").disabled = true;
   setMessage("homeMsg", "Connecting to the game...");
+
   socket.emit("playNow", { name }, result => {
     $("play").disabled = false;
+
     if (!result?.ok) {
       setMessage("homeMsg", result?.error || "Could not start a game.");
       return;
     }
+
     showScreen("waiting");
     setMessage("waitingMsg", "Looking for players. Computer players will fill empty seats.");
   });
 });
+
 
 $("cancel").addEventListener("click", () => {
   socket.emit("cancelMatch");
