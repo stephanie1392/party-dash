@@ -162,18 +162,27 @@ socket.on("gameError", data => {
   setMessage("roundStatus", data?.message || "Something went wrong.");
 });
 
+
 function renderPlayers(players) {
   $("players").innerHTML = players.map(player => {
     const isMe = player.id === myId;
     const computer = player.isBot ? " 🤖" : "";
-    const roleLabel = player.roleRevealed && player.role
-      ? " · " + safeText(player.role)
+
+    // Show the Minister publicly; reveal all roles only at the end.
+    const role = player.roleRevealed && player.role
+      ? player.role
+      : player.publicRole;
+
+    const roleLabel = role
+      ? " · " + safeText(role)
       : "";
 
     return `
       <div class="playerRow">
         <span class="dot"></span>
-        <span>${safeText(player.name)}${computer}${isMe ? " (YOU)" : ""}${roleLabel}</span>
+        <span>
+          ${safeText(player.name)}${computer}${isMe ? " (YOU)" : ""}${roleLabel}
+        </span>
         <span class="playerScore">${Number(player.score) || 0} pts</span>
       </div>
     `;
