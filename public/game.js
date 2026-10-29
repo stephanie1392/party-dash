@@ -180,11 +180,21 @@ function renderPlayers(players) {
   }).join("");
 }
 
+
 function renderSuspects(players) {
   const panel = $("guessPanel");
+  const buttons = $("suspectButtons");
+
+  // Only the Minister can make the final accusation.
+  if (myRole !== "Minister" || hasResult) {
+    panel.classList.add("hidden");
+    buttons.innerHTML = "";
+    return;
+  }
+
   panel.classList.remove("hidden");
 
-  $("suspectButtons").innerHTML = players
+  buttons.innerHTML = players
     .filter(player => player.id !== myId)
     .map(player => `
       <button class="secondary suspect" data-id="${safeText(player.id)}">
@@ -192,24 +202,35 @@ function renderSuspects(players) {
       </button>
     `).join("");
 
-  $("suspectButtons").querySelectorAll("button").forEach(button => {
+  buttons.querySelectorAll("button").forEach(button => {
     button.addEventListener("click", () => {
-      if (hasResult) return;
-      const confirmed = window.confirm("Accuse this player of being the Thief?");
+      if (hasResult || myRole !== "Minister") return;
+
+      const confirmed = window.confirm(
+        "Accuse this player of being the Thief?"
+      );
       if (!confirmed) return;
 
-      $("suspectButtons").querySelectorAll("button").forEach(item => {
+      buttons.querySelectorAll("button").forEach(item => {
         item.disabled = true;
       });
 
-      socket.emit("accuse", { suspectId: button.dataset.id }, result => {
-        if (!result?.ok) {
-          setMessage("roundStatus", result?.error || "Accusation failed.");
-          $("suspectButtons").querySelectorAll("button").forEach(item => {
-            item.disabled = false;
-          });
+      socket.emit(
+        "accuse",
+        { suspectId: button.dataset.id },
+        result => {
+          if (!result?.ok) {
+            setMessage(
+              "roundStatus",
+              result?.error || "Accusation failed."
+            );
+
+            buttons.querySelectorAll("button").forEach(item => {
+              item.disabled = false;
+            });
+          }
         }
-      });
+      );
     });
   });
 }
