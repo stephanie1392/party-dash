@@ -285,25 +285,52 @@ io.on("connection", socket => {
     }
   });
 
+  
   socket.on("accuse", (data, ack) => {
     const match = matches.get(socket.data.matchId);
+
     if (!match || match.finished) {
-      return ack?.({ ok: false, error: "There is no active investigation." });
+      return ack?.({
+        ok: false,
+        error: "There is no active investigation."
+      });
+    }
+
+    // Only the Minister may make the final accusation.
+    const accuser = match.players.find(
+      p => p.id === socket.id
+    );
+
+    if (!accuser || accuser.role !== "Minister") {
+      return ack?.({
+        ok: false,
+        error: "Only the Minister can make the final accusation."
+      });
     }
 
     if (match.accused) {
-      return ack?.({ ok: false, error: "An accusation has already been made." });
+      return ack?.({
+        ok: false,
+        error: "An accusation has already been made."
+      });
     }
 
-    const suspect = match.players.find(p => p.id === data?.suspectId);
+    const suspect = match.players.find(
+      p => p.id === data?.suspectId
+    );
+
     if (!suspect || suspect.id === socket.id) {
-      return ack?.({ ok: false, error: "Choose another player." });
+      return ack?.({
+        ok: false,
+        error: "Choose another player."
+      });
     }
 
     match.accused = true;
     ack?.({ ok: true });
     finishRound(match, suspect.id);
   });
+
 
   socket.on("playAgain", ack => {
     const oldMatch = matches.get(socket.data.matchId);
