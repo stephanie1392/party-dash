@@ -52,13 +52,18 @@ function publicPlayers(match, reveal = false) {
 function sendUpdate(match, phase, canAccuse = true) {
   for (const p of match.players) {
     if (p.isBot) continue;
+
     io.to(p.id).emit("gameUpdate", {
       players: publicPlayers(match),
       phase,
-      canAccuse: canAccuse && !match.finished
+      canAccuse:
+        canAccuse &&
+        !match.finished &&
+        p.role === "Minister"
     });
   }
 }
+
 
 function sendChat(match, name, message, system = false) {
   const item = { name, message, system };
