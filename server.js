@@ -38,7 +38,7 @@ function publicPlayers(match, reveal = false) {
     id: p.id,
     name: p.name,
     isBot: p.isBot,
-    score: scores.get(p.name) || 0,
+    score: reveal ? (scores.get(p.name) || 0) : undefined,
 
     // The Minister is publicly identified.
     publicRole: p.role === "Minister" ? "Minister" : undefined,
@@ -232,7 +232,7 @@ function finishRound(match, suspectId) {
     scores.set(king.name, (scores.get(king.name) || 0) + 1000);
     scores.set(minister.name, (scores.get(minister.name) || 0) + 500);
     scores.set(police.name, (scores.get(police.name) || 0) + 300);
-  } else {
+     } else {
     const transfer = 500;
     scores.set(thief.name, (scores.get(thief.name) || 0) + transfer);
   }
@@ -242,8 +242,8 @@ function finishRound(match, suspectId) {
   const revealed = publicPlayers(match, true);
   const message = caught
     ? `${thief.name} was the thief and was caught! King +1000, Minister +500, Police +300.`
-    : `The accusation was wrong! ${thief.name} was the thief. The Minister's 500 points go to the Thief.`;
-
+   : `The accusation was wrong! ${thief.name} was the thief. The Thief earns 500 points.`;
+  
   for (const p of match.players) {
     if (p.isBot) continue;
     io.to(p.id).emit("roundResult", {
