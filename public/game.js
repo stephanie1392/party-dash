@@ -35,7 +35,7 @@ function safeText(value) {
 
 socket.on("connect", () => {
   myId = socket.id;
-  loadLeaderboard();
+loadLeaderboard();
 });
 
 function loadLeaderboard() {
@@ -97,7 +97,7 @@ $("homeButton").addEventListener("click", () => {
   hasResult = false;
   showScreen("home");
   
-  loadLeaderboard();
+loadLeaderboard();
 });
 
 $("chatForm").addEventListener("submit", event => {
@@ -139,9 +139,8 @@ socket.on("matchStarted", data => {
   $("myRoleEmoji").textContent = role.emoji;
   $("myRole").textContent = myRole || "Unknown";
   $("roleHint").textContent = role.hint;
-
-  $("chatMessages").innerHTML = "";
- $("resultPanel").classList.add("hidden");
+$("chatMessages").innerHTML = "";
+$("resultPanel").classList.add("hidden");
 $("chatInput").disabled = false;
 
 showScreen("game");
@@ -187,7 +186,7 @@ socket.on("roundResult", result => {
     </div>
   `).join("");
   
-    loadLeaderboard();
+ loadLeaderboard();
 
   (result.players || []).forEach(player => {
     addChatMessage({
