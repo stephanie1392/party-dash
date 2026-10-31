@@ -203,7 +203,6 @@ function renderPlayers(players) {
     const isMe = player.id === myId;
     const computer = player.isBot ? " 🤖" : "";
 
-    // Show the Minister publicly; reveal all roles only at the end.
     const role = player.roleRevealed && player.role
       ? player.role
       : player.publicRole;
@@ -218,12 +217,10 @@ function renderPlayers(players) {
         <span>
           ${safeText(player.name)}${computer}${isMe ? " (YOU)" : ""}${roleLabel}
         </span>
-        <span class="playerScore">${Number(player.score) || 0} pts</span>
       </div>
     `;
   }).join("");
 }
-
 
 function renderSuspects(players) {
   const panel = $("guessPanel");
