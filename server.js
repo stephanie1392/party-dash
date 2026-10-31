@@ -102,25 +102,128 @@ function botReply(match, bot, message) {
     ? [...questionReplies, ...replies]
     : replies;
 
-  const recent = match.botReplyHistory || [];
+  const recent = match.bfunction botReply(match, bot, message) {
+  if (match.finished || !match.players.includes(bot)) return "";
 
-  const freshReplies = options.filter(
-    reply => !recent.includes(reply)
-  );
+  const others = match.players.filter(p => p.id !== bot.id);
+  const target = others[Math.floor(Math.random() * others.length)];
+  const name = target ? target.name : "someone";
+  const isQuestion = String(message || "").includes("?");
 
-  if (freshReplies.length) {
-    options = freshReplies;
+  const replies = {
+    Thief: [
+      `Why is everyone questioning me? I think ${name} is acting suspicious!`,
+      `I was nowhere near the thief! Maybe you should question ${name}.`,
+      `That's a strange accusation. What proof do you have?`,
+      `I have nothing to hide. Let's hear ${name}'s explanation!`,
+      `I think someone is trying to frame me. Look at the other players!`,
+      `Minister, don't believe everything you hear. Someone is bluffing!`,
+      `Why are we wasting time questioning me?`,
+      `I agree with the investigation, but ${name} needs to explain something!`
+    ],
+
+    King: [
+      `I'm watching everyone's answers. ${name}'s story sounds a little strange.`,
+      `Let's not rush! I want to hear what ${name} has to say.`,
+      `Someone is changing their story. We need to pay attention!`,
+      `I don't trust that explanation just yet.`,
+      `Minister, ask ${name} another question!`,
+      `I have a feeling someone here is hiding something.`,
+      `That answer doesn't quite convince me. Can you explain?`
+    ],
+
+    Police: [
+      `I want to question ${name}. Their explanation needs more detail!`,
+      `Let's compare everyone's stories before deciding.`,
+      `Someone is avoiding the important questions. I noticed that!`,
+      `Minister, we need more evidence before making an accusation.`,
+      `I'm keeping an eye on everyone. Nobody is off the suspect list!`,
+      `That sounds like a bluff to me. Who agrees?`,
+      `I think we should ask ${name} where they were!`
+    ]
+  };
+
+  const personality = {
+    Milo: [
+      "Hold on!",
+      "Wait a minute!",
+      "I've got a suspicion!",
+      "Listen everyone!"
+    ],
+    Coco: [
+      "Hmm...",
+      "Interesting...",
+      "I'm not convinced!",
+      "Oh, really?"
+    ],
+    Maya: [
+      "Okay, listen!",
+      "Something feels strange!",
+      "I have a theory!",
+      "Just saying..."
+    ],
+    Raja: [
+      "Attention everyone!",
+      "I have a question!",
+      "Think carefully!",
+      "Something isn't right!"
+    ]
+  };
+
+  const roleReplies = replies[bot.role] || replies.Police;
+  let reply = roleReplies[
+    Math.floor(Math.random() * roleReplies.length)
+  ];
+
+  if (isQuestion && Math.random() < 0.65) {
+    reply = `${name}, can you explain that? ${reply}`;
   }
 
-  const reply = options[Math.floor(Math.random() * options.length)];
+  const openings = personality[bot.name] || personality.Milo;
 
-  match.botReplyHistory.push(reply);
+  return `${openings[Math.floor(Math.random() * openings.length)]} ${reply}`;
+}
 
-  if (match.botReplyHistory.length > 5) {
-    match.botReplyHistory.shift();
+  function scheduleBotTurn(match, delay = 5000) {
+  if (match.finished) return;
+
+  if (match.botTimer) {
+    clearTimeout(match.botTimer);
   }
 
-  sendChat(match, bot.name, reply);
+  match.botTimer = setTimeout(() => {
+    match.botTimer = null;
+
+    if (match.finished) return;
+
+    const bots = match.players.filter(p => p.isBot);
+
+    if (!bots.length) return;
+
+    const bot = bots[
+      match.botReplyIndex % bots.length
+    ];
+
+    match.botReplyIndex++;
+
+    const message = botReply(
+      match,
+      bot,
+      match.lastChatMessage || ""
+    );
+
+    if (message) {
+      sendChat(match, bot.name, message);
+      match.lastChatMessage = message;
+    }
+
+    // Keep the computer conversation going.
+    scheduleBotTurn(
+      match,
+      5000 + Math.random() * 3000
+    );
+
+  }, delay);
 }
 
 function createBot(index) {
