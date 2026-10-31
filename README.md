@@ -1,4 +1,4 @@
-# Party Dash 🌈🎲
+# Find the Thief 🌈🎲
 
 A beginner-friendly 2–4 player worldwide multiplayer board game.
 
