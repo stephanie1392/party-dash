@@ -96,6 +96,8 @@ $("homeButton").addEventListener("click", () => {
   myRole = null;
   hasResult = false;
   showScreen("home");
+  
+  loadLeaderboard();
 });
 
 $("chatForm").addEventListener("submit", event => {
@@ -184,6 +186,8 @@ socket.on("roundResult", result => {
       <span>${safeText(player.role || "Player")} · 🏆 ${Number(player.score) || 0} points</span>
     </div>
   `).join("");
+  
+    loadLeaderboard();
 
   (result.players || []).forEach(player => {
     addChatMessage({
