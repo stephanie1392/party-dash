@@ -145,6 +145,7 @@ socket.on("chatMessage", message => {
 });
 
 socket.on("roundResult", result => {
+  console.log("ROUND RESULT RECEIVED:", result);
   hasResult = true;
   $("guessPanel").classList.add("hidden");
   $("resultPanel").classList.remove("hidden");
