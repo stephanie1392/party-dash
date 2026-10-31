@@ -35,7 +35,7 @@ function safeText(value) {
 
 socket.on("connect", () => {
   myId = socket.id;
-loadLeaderboard();
+  loadLeaderboard();
 });
 
 function loadLeaderboard() {
@@ -95,9 +95,8 @@ $("homeButton").addEventListener("click", () => {
   currentGame = null;
   myRole = null;
   hasResult = false;
-  showScreen("home");
-  
-loadLeaderboard();
+  showScreen("home");  
+  loadLeaderboard();
 });
 
 $("chatForm").addEventListener("submit", event => {
@@ -139,14 +138,14 @@ socket.on("matchStarted", data => {
   $("myRoleEmoji").textContent = role.emoji;
   $("myRole").textContent = myRole || "Unknown";
   $("roleHint").textContent = role.hint;
-$("chatMessages").innerHTML = "";
-$("resultPanel").classList.add("hidden");
-$("chatInput").disabled = false;
+  $("chatMessages").innerHTML = "";
+  $("resultPanel").classList.add("hidden");
+  $("chatInput").disabled = false;
 
 showScreen("game");
 renderPlayers(data.players || []);
 renderSuspects(data.players || []);
-  setMessage("roundStatus", "Round " + (data.round || 1) + " has started. Ask questions and investigate!");
+setMessage("roundStatus", "Round " + (data.round || 1) + " has started. Ask questions and investigate!");
 });
 socket.on("gameUpdate", data => {
   if (!currentGame) return;
@@ -186,7 +185,7 @@ socket.on("roundResult", result => {
     </div>
   `).join("");
   
- loadLeaderboard();
+loadLeaderboard();
 
   (result.players || []).forEach(player => {
     addChatMessage({
