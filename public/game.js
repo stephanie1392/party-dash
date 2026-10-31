@@ -79,7 +79,7 @@ const name = "Player" + Math.floor(1000 + Math.random() * 9000);
     }
 
     showScreen("waiting");
-    setMessage("waitingMsg", "Looking for players. Computer players will fill empty seats.");
+    setMessage("waitingMsg", "Looking for players...");
   });
 });
 
