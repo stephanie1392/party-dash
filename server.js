@@ -125,7 +125,7 @@ function startMatch(humans) {
   }
 
   const humanPlayers = match.players.filter(player => !player.isBot);
-const humanPlayers = match.players.filter(player => !player.isBot);
+
 const shuffledRoles = [...ROLE_INFO].sort(() => Math.random() - 0.5);
 
 const ministerPlayer = humanPlayers.length > 0
