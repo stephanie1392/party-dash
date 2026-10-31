@@ -175,7 +175,7 @@ socket.on("roundResult", result => {
 
   $("resultTitle").textContent = result.caught
     ? "🎉 The Thief Was Caught!"
-    : "🦊 The Thief Escaped!";
+    : "😈 The Thief Escaped!";
 
   $("resultText").textContent = result.message || "The roles have been revealed.";
   $("scoreboard").innerHTML = (result.players || []).map(player => `
