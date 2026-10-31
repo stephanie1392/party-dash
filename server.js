@@ -125,23 +125,30 @@ function startMatch(humans) {
   }
 
   const humanPlayers = match.players.filter(player => !player.isBot);
+const humanPlayers = match.players.filter(player => !player.isBot);
 const shuffledRoles = [...ROLE_INFO].sort(() => Math.random() - 0.5);
 
-if (humanPlayers.length === 1) {
-  const minister = shuffledRoles.find(role => role.role === "Minister");
-  const otherRoles = shuffledRoles.filter(role => role.role !== "Minister");
+const ministerPlayer = humanPlayers.length > 0
+  ? humanPlayers[Math.floor(Math.random() * humanPlayers.length)]
+  : null;
 
-  match.players.forEach((player, index) => {
-    player.role = player.isBot
-      ? otherRoles.splice(Math.floor(Math.random() * otherRoles.length), 1)[0].role
-      : minister.role;
-  });
-} else {
-  match.players.forEach((player, index) => {
-    player.role = shuffledRoles[index].role;
-  });
-}
+const otherRoles = shuffledRoles
+  .filter(role => role.role !== "Minister");
 
+const shuffledOtherRoles = [...otherRoles].sort(
+  () => Math.random() - 0.5
+);
+
+let otherRoleIndex = 0;
+
+match.players.forEach(player => {
+  if (player === ministerPlayer) {
+    player.role = "Minister";
+  } else {
+    player.role = shuffledOtherRoles[otherRoleIndex++].role;
+  }
+});
+  
 match.players.forEach(player => {
     if (!scores.has(player.name)) scores.set(player.name, 0);
     if (!player.isBot) {
