@@ -367,6 +367,62 @@ input:focus {
     flex-direction: column;
   }
 
+  
+/* Hall of Fame polish */
+.leaderboard-card {
+  border-color: #ffe6a8;
+  background: linear-gradient(145deg, #ffffff, #fff8e9);
+}
+
+.leaderboard-card h2 {
+  color: #6842aa;
+  text-align: center;
+  font-size: clamp(23px, 5vw, 30px);
+}
+
+.leaderboard-card > p {
+  text-align: center;
+  color: #856ca5;
+  font-weight: 700;
+}
+
+.leaderboard-card .score:first-child {
+  background: linear-gradient(110deg, #fff0b8, #ffe1a0);
+  border: 2px solid #ffd36c;
+}
+
+.leaderboard-card .score {
+  box-shadow: 0 3px 0 rgba(52, 35, 69, 0.06);
+  transition: transform 0.15s ease;
+}
+
+.leaderboard-card .score:hover {
+  transform: translateY(-2px);
+}
+
+/* Clearer keyboard focus */
+button:focus-visible {
+  outline: 3px solid #342345;
+  outline-offset: 3px;
+}
+
+/* Small-screen layout improvements */
+@media (max-width: 360px) {
+  .logo {
+    letter-spacing: -1px;
+  }
+
+  .role-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .game-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
   .score span {
     text-align: left;
   }
