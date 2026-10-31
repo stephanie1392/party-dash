@@ -1,4 +1,3 @@
-
 const path = require("path");
 const express = require("express");
 const http = require("http");
@@ -198,9 +197,7 @@ function scheduleBotTurn(match, delay = 5000) {
       match.lastChatMessage = message;
     }
 
-    // Continue the conversation.
     scheduleBotTurn(match, 5000 + Math.random() * 3000);
-
   }, delay);
 }
 
@@ -326,7 +323,6 @@ function startMatch(humans) {
     true
   );
 
-  // Start the computer conversation.
   scheduleBotTurn(match, 1800);
 }
 
@@ -495,7 +491,6 @@ io.on("connection", socket => {
 
     ack?.({ ok: true });
 
-    // Let the next computer respond soon.
     scheduleBotTurn(match, 1000 + Math.random() * 800);
   });
 
@@ -542,71 +537,52 @@ io.on("connection", socket => {
     finishRound(match, suspect.id);
   });
 
- 
-socket.on("playAgain", ack => {
-  const oldMatch = matches.get(socket.data.matchId);
+  // Start another match after the current round has finished.
+  socket.on("playAgain", ack => {
+    const oldMatch = matches.get(socket.data.matchId);
 
-  if (!oldMatch || !oldMatch.finished) {
-    return ack?.({
-      ok: false,
-      error: "Finish the current round first."
-    });
-  }
-
-  // Keep only players whose connections are still active.
-  const humans = oldMatch.players
-    .filter(p => !p.isBot)
-    .filter(p => io.sockets.sockets.has(p.id))
-    .map(p => ({
-      id: p.id,
-      name: p.name
-    }));
-
-  if (!humans.length) {
-    return ack?.({
-      ok: false,
-      error: "No connected players found."
-    });
-  }
-
-  // Clean up the previous match for every human player.
-  for (const player of humans) {
-    const playerSocket = io.sockets.sockets.get(player.id);
-
-    if (playerSocket) {
-      playerSocket.leave(oldMatch.id);
-      playerSocket.data.matchId = null;
-    }
-  }
-
-  if (oldMatch.botTimer) {
-    clearTimeout(oldMatch.botTimer);
-  }
-
-  matches.delete(oldMatch.id);
-
-  // Create the new match before acknowledging success.
-  startMatch(humans);
-
-  ack?.({ ok: true });
-});
-
+    if (!oldMatch || !oldMatch.finished) {
+      return ack?.({
+        ok: false,
+        error: "Finish the current round first."
+      });
     }
 
     const humans = oldMatch.players
       .filter(p => !p.isBot)
+      .filter(p => io.sockets.sockets.has(p.id))
       .map(p => ({
         id: p.id,
         name: p.name
       }));
 
+    if (!humans.length) {
+      return ack?.({
+        ok: false,
+        error: "No connected players found."
+      });
+    }
+
+    // Remove connected players from the old match.
+    for (const player of humans) {
+      const playerSocket = io.sockets.sockets.get(player.id);
+
+      if (playerSocket) {
+        playerSocket.leave(oldMatch.id);
+        playerSocket.data.matchId = null;
+      }
+    }
+
+    if (oldMatch.botTimer) {
+      clearTimeout(oldMatch.botTimer);
+    }
+
     matches.delete(oldMatch.id);
 
-    socket.data.matchId = null;
+    // Create the new match.
+    startMatch(humans);
 
     ack?.({ ok: true });
-
-    startMatch(humans);
   });
 
   socket.on("leaveMatch", () => {
