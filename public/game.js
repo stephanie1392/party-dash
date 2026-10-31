@@ -125,13 +125,19 @@ socket.on("matchStarted", data => {
   renderPlayers(data.players || []);
   setMessage("roundStatus", "Round " + (data.round || 1) + " has started. Ask questions and investigate!");
 });
-
 socket.on("gameUpdate", data => {
   if (!currentGame) return;
+
   currentGame = { ...currentGame, ...data };
-  if (data.players) renderPlayers(data.players);
-  if (data.phase) setMessage("roundStatus", data.phase);
-  if (data.canAccuse) renderSuspects(data.players || []);
+
+  if (data.players) {
+    renderPlayers(data.players);
+    renderSuspects(data.players);
+  }
+
+  if (data.phase) {
+    setMessage("roundStatus", data.phase);
+  }
 });
 
 socket.on("chatMessage", message => {
