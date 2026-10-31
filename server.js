@@ -24,8 +24,6 @@ const ROLE_INFO = [
 
 const queue = [];
 const matches = new Map();
-
-// Only human player scores are stored here.
 const scores = new Map();
 
 let nextMatchId = 1;
@@ -48,13 +46,14 @@ function publicPlayers(match, reveal = false) {
       : undefined,
 
     publicRole: p.role === "Minister" ? "Minister" : undefined,
-
     role: reveal ? p.role : undefined,
     roleRevealed: reveal
   }));
 }
 
 function addPoints(match, player, amount) {
+  if (!player) return;
+
   if (player.isBot) {
     const current = match.botScores.get(player.id) || 0;
     match.botScores.set(player.id, current + amount);
@@ -62,6 +61,75 @@ function addPoints(match, player, amount) {
     const current = scores.get(player.name) || 0;
     scores.set(player.name, current + amount);
   }
+}
+
+function sendChat(match, name, message, system = false) {
+  io.to(match.id).emit("chatMessage", {
+    name,
+    message,
+    system
+  });
+}
+
+function botReply(match, bot, message) {
+  if (match.finished || !match.players.includes(bot)) return;
+
+  const text = message.toLowerCase();
+
+  const replies = [
+    "I was nowhere near the thief!",
+    "We should carefully check everyone's story.",
+    "That sounds suspicious. Can you explain more?",
+    "I think we need more clues before accusing anyone.",
+    "I saw people moving around, but I'm not completely sure.",
+    "Let's hear what the others have to say.",
+    "Minister, have you noticed anything unusual?",
+    "I think someone is hiding an important detail.",
+    "We shouldn't rush. The real thief might fool us!",
+    "Everyone seems suspicious to me right now!",
+    "I agree! We need to find out who is telling the truth.",
+    "Minister, I hope you make the right decision!"
+  ];
+
+  const questionReplies = [
+    "That's a good question. I think we should investigate further.",
+    "I'm not sure, but someone's story doesn't add up.",
+    "I think we should ask the others too.",
+    "Minister, what do you think about that?"
+  ];
+
+  let options = text.includes("?")
+    ? [...questionReplies, ...replies]
+    : replies;
+
+  const recent = match.botReplyHistory || [];
+
+  const freshReplies = options.filter(
+    reply => !recent.includes(reply)
+  );
+
+  if (freshReplies.length) {
+    options = freshReplies;
+  }
+
+  const reply = options[Math.floor(Math.random() * options.length)];
+
+  match.botReplyHistory.push(reply);
+
+  if (match.botReplyHistory.length > 5) {
+    match.botReplyHistory.shift();
+  }
+
+  sendChat(match, bot.name, reply);
+}
+
+function createBot(index) {
+  return {
+    id: `bot-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
+    name: ["Milo", "Coco", "Maya", "Raja"][index % 4],
+    isBot: true,
+    role: null
+  };
 }
 
 function sendUpdate(match, phase, canAccuse = true) {
@@ -79,91 +147,6 @@ function sendUpdate(match, phase, canAccuse = true) {
   }
 }
 
-function sendChat(match, name, message, system = false) {
-  io.to(match.id).emit("chatMessage", {
-    name,
-    message,
-    system
-  });
-}
-
-function botReply(match, bot, message) {
-  if (match.finished) return;
-
-  const text = String(message || "").toLowerCase();
-
-  const replyGroups = [
-    {
-      test: /\b(thief|steal|stolen|missing)\b/,
-      replies: [
-        "We need to find out who had a chance to take it.",
-        "The thief might be trying to distract us.",
-        "Let's compare everyone's stories.",
-        "Someone here knows more than they are saying."
-      ]
-    },
-    {
-      test: /\b(where|when|who|why|how)\b/,
-      replies: [
-        "I think we should ask everyone the same question.",
-        "That's a good question. We need to check the clues.",
-        "I'm still trying to work out what happened.",
-        "Maybe another player noticed something important."
-      ]
-    },
-    {
-      test: /\b(king|minister|police|suspect|accuse)\b/,
-      replies: [
-        "The Minister should listen to everyone before deciding.",
-        "The Police need to look at all the clues.",
-        "We shouldn't accuse anyone without a good reason.",
-        "Let's hear what the other players think."
-      ]
-    },
-    {
-      test: /\?/,
-      replies: [
-        "I'm not completely sure yet.",
-        "I need a little more information.",
-        "Interesting question. What does everyone else think?",
-        "Let's investigate that carefully."
-      ]
-    },
-    {
-      test: /.*/,
-      replies: [
-        "That is interesting. Let's keep investigating.",
-        "I wonder if anyone has noticed something unusual.",
-        "We need to be careful before making a decision.",
-        "I am keeping an eye on everyone's story."
-      ]
-    }
-  ];
-
-  const group = replyGroups.find(item => item.test.test(text));
-  const recent = match.botReplyHistory || [];
-
-  const choices = group.replies.filter(
-    reply => !recent.includes(reply)
-  );
-
-  const pool = choices.length ? choices : group.replies;
-  const reply = pool[Math.floor(Math.random() * pool.length)];
-
-  match.botReplyHistory = [...recent, reply].slice(-5);
-
-  sendChat(match, bot.name, reply);
-}
-
-function createBot(index) {
-  return {
-    id: `bot-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
-    name: ["Milo", "Coco", "Maya", "Raja"][index % 4],
-    isBot: true,
-    role: null
-  };
-}
-
 function startMatch(humans) {
   if (!humans.length) return;
 
@@ -179,6 +162,7 @@ function startMatch(humans) {
     })),
     botScores: new Map(),
     botReplyHistory: [],
+    botReplyIndex: 0,
     round: 1,
     finished: false,
     accused: false
@@ -220,22 +204,20 @@ function startMatch(humans) {
 
   match.players.forEach(player => {
     if (player.isBot) {
-      // Bot scores belong only to this match.
       match.botScores.set(player.id, 0);
       return;
     }
 
-    // Human scores survive new matches while the server is running.
     if (!scores.has(player.name)) {
       scores.set(player.name, 0);
     }
 
-    const socket = io.sockets.sockets.get(player.id);
+    const playerSocket = io.sockets.sockets.get(player.id);
 
-    if (socket) {
-      socket.data.matchId = id;
-      socket.data.queued = false;
-      socket.join(id);
+    if (playerSocket) {
+      playerSocket.data.matchId = id;
+      playerSocket.data.queued = false;
+      playerSocket.join(id);
     }
   });
 
@@ -254,22 +236,26 @@ function startMatch(humans) {
     });
   }
 
+  // Opening investigation message
   sendChat(
     match,
     "Game Host",
-    "The investigation begins! Ask questions to find the thief.",
+    "🔍 Find the real thief, Minister!",
     true
   );
 
-  const firstBot = match.players.find(p => p.isBot);
+  // First computer player welcomes everyone
+  const bots = match.players.filter(p => p.isBot);
 
-  if (firstBot) {
+  if (bots.length) {
+    match.botReplyIndex = 1;
+
     setTimeout(() => {
       if (!match.finished) {
         sendChat(
           match,
-          firstBot.name,
-          "Hello everyone! Where were you when the theft happened?"
+          bots[0].name,
+          "I'm ready to investigate! Minister, let's find the thief!"
         );
       }
     }, 1800);
@@ -286,9 +272,9 @@ function startQueuedMatch() {
 
   while (queue.length && humans.length < 4) {
     const entry = queue.shift();
-    const socket = io.sockets.sockets.get(entry.id);
+    const playerSocket = io.sockets.sockets.get(entry.id);
 
-    if (socket && socket.connected) {
+    if (playerSocket && playerSocket.connected) {
       humans.push(entry);
     }
   }
@@ -354,6 +340,7 @@ function finishRound(match, suspectId) {
 }
 
 io.on("connection", socket => {
+
   socket.on("getLeaderboard", ack => {
     const leaderboard = [...scores.entries()]
       .map(([name, score]) => ({ name, score }))
@@ -407,6 +394,7 @@ io.on("connection", socket => {
     }
   });
 
+  // One chat handler: computer players take turns replying.
   socket.on("sendChat", (data, ack) => {
     const match = matches.get(socket.data.matchId);
 
@@ -435,9 +423,13 @@ io.on("connection", socket => {
     sendChat(match, player.name, message);
     ack?.({ ok: true });
 
-    const bot = match.players.find(p => p.isBot);
+    const bots = match.players.filter(p => p.isBot);
 
-    if (bot && Math.random() < 0.8) {
+    if (bots.length && Math.random() < 0.8) {
+      const bot = bots[match.botReplyIndex % bots.length];
+
+      match.botReplyIndex++;
+
       setTimeout(() => {
         botReply(match, bot, message);
       }, 1000 + Math.random() * 2000);
@@ -507,11 +499,12 @@ io.on("connection", socket => {
       }));
 
     matches.delete(oldMatch.id);
+
     socket.data.matchId = null;
 
     ack?.({ ok: true });
 
-    // New match: human scores remain, bot scores start at zero.
+    // Human scores remain; new bot scores start at zero.
     startMatch(humans);
   });
 
@@ -550,6 +543,7 @@ io.on("connection", socket => {
       }
     }
   });
+
 });
 
 server.listen(PORT, "0.0.0.0", () => {
