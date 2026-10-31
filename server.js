@@ -124,9 +124,25 @@ function startMatch(humans) {
     match.players.push(createBot(match.players.length));
   }
 
-  const shuffledRoles = [...ROLE_INFO].sort(() => Math.random() - 0.5);
+  const humanPlayers = match.players.filter(player => !player.isBot);
+const shuffledRoles = [...ROLE_INFO].sort(() => Math.random() - 0.5);
+
+if (humanPlayers.length === 1) {
+  const minister = shuffledRoles.find(role => role.role === "Minister");
+  const otherRoles = shuffledRoles.filter(role => role.role !== "Minister");
+
+  match.players.forEach((player, index) => {
+    player.role = player.isBot
+      ? otherRoles.splice(Math.floor(Math.random() * otherRoles.length), 1)[0].role
+      : minister.role;
+  });
+} else {
   match.players.forEach((player, index) => {
     player.role = shuffledRoles[index].role;
+  });
+}
+
+match.players.forEach(player => {
     if (!scores.has(player.name)) scores.set(player.name, 0);
     if (!player.isBot) {
       player.matchId = id;
