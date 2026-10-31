@@ -38,13 +38,11 @@ function publicPlayers(match, reveal = false) {
     id: p.id,
     name: p.name,
     isBot: p.isBot,
-
     score: reveal
       ? (p.isBot
           ? (match.botScores.get(p.id) || 0)
           : (scores.get(p.name) || 0))
       : undefined,
-
     publicRole: p.role === "Minister" ? "Minister" : undefined,
     role: reveal ? p.role : undefined,
     roleRevealed: reveal
@@ -71,39 +69,11 @@ function sendChat(match, name, message, system = false) {
   });
 }
 
+// Different personalities and dialogue for each secret role.
 function botReply(match, bot, message) {
-  if (match.finished || !match.players.includes(bot)) return;
-
-  const text = message.toLowerCase();
-
-  const replies = [
-    "I was nowhere near the thief!",
-    "We should carefully check everyone's story.",
-    "That sounds suspicious. Can you explain more?",
-    "I think we need more clues before accusing anyone.",
-    "I saw people moving around, but I'm not completely sure.",
-    "Let's hear what the others have to say.",
-    "Minister, have you noticed anything unusual?",
-    "I think someone is hiding an important detail.",
-    "We shouldn't rush. The real thief might fool us!",
-    "Everyone seems suspicious to me right now!",
-    "I agree! We need to find out who is telling the truth.",
-    "Minister, I hope you make the right decision!"
-  ];
-
-  const questionReplies = [
-    "That's a good question. I think we should investigate further.",
-    "I'm not sure, but someone's story doesn't add up.",
-    "I think we should ask the others too.",
-    "Minister, what do you think about that?"
-  ];
-
-  let options = text.includes("?")
-    ? [...questionReplies, ...replies]
-    : replies;
-
-  const recent = match.bfunction botReply(match, bot, message) {
-  if (match.finished || !match.players.includes(bot)) return "";
+  if (match.finished || !match.players.includes(bot)) {
+    return "";
+  }
 
   const others = match.players.filter(p => p.id !== bot.id);
   const target = others[Math.floor(Math.random() * others.length)];
@@ -143,7 +113,7 @@ function botReply(match, bot, message) {
     ]
   };
 
-  const personality = {
+  const personalities = {
     Milo: [
       "Hold on!",
       "Wait a minute!",
@@ -161,30 +131,44 @@ function botReply(match, bot, message) {
       "Something feels strange!",
       "I have a theory!",
       "Just saying..."
-    ],
-    Raja: [
-      "Attention everyone!",
-      "I have a question!",
-      "Think carefully!",
-      "Something isn't right!"
     ]
   };
 
   const roleReplies = replies[bot.role] || replies.Police;
-  let reply = roleReplies[
-    Math.floor(Math.random() * roleReplies.length)
-  ];
 
-  if (isQuestion && Math.random() < 0.65) {
-    reply = `${name}, can you explain that? ${reply}`;
+  let options = [...roleReplies];
+
+  if (isQuestion) {
+    options.push(
+      `That's a good question. But what about ${name}?`,
+      `Why don't we ask ${name} the same question?`,
+      `I think we need to check everyone's story first.`
+    );
   }
 
-  const openings = personality[bot.name] || personality.Milo;
+  const recent = match.botReplyHistory || [];
+  const fresh = options.filter(reply => !recent.includes(reply));
 
-  return `${openings[Math.floor(Math.random() * openings.length)]} ${reply}`;
+  if (fresh.length) {
+    options = fresh;
+  }
+
+  const reply = options[Math.floor(Math.random() * options.length)];
+
+  match.botReplyHistory.push(reply);
+
+  if (match.botReplyHistory.length > 6) {
+    match.botReplyHistory.shift();
+  }
+
+  const openings = personalities[bot.name] || personalities.Milo;
+  const opening = openings[Math.floor(Math.random() * openings.length)];
+
+  return `${opening} ${reply}`;
 }
 
-  function scheduleBotTurn(match, delay = 5000) {
+// Computers take turns speaking automatically.
+function scheduleBotTurn(match, delay = 5000) {
   if (match.finished) return;
 
   if (match.botTimer) {
@@ -200,10 +184,7 @@ function botReply(match, bot, message) {
 
     if (!bots.length) return;
 
-    const bot = bots[
-      match.botReplyIndex % bots.length
-    ];
-
+    const bot = bots[match.botReplyIndex % bots.length];
     match.botReplyIndex++;
 
     const message = botReply(
@@ -217,11 +198,8 @@ function botReply(match, bot, message) {
       match.lastChatMessage = message;
     }
 
-    // Keep the computer conversation going.
-    scheduleBotTurn(
-      match,
-      5000 + Math.random() * 3000
-    );
+    // Continue the conversation.
+    scheduleBotTurn(match, 5000 + Math.random() * 3000);
 
   }, delay);
 }
@@ -229,7 +207,7 @@ function botReply(match, bot, message) {
 function createBot(index) {
   return {
     id: `bot-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
-    name: ["Milo", "Coco", "Maya", "Raja"][index % 4],
+    name: ["Milo", "Coco", "Maya"][index % 3],
     isBot: true,
     role: null
   };
@@ -266,23 +244,25 @@ function startMatch(humans) {
     botScores: new Map(),
     botReplyHistory: [],
     botReplyIndex: 0,
+    botTimer: null,
+    lastChatMessage: "",
     round: 1,
     finished: false,
     accused: false
   };
 
   while (match.players.length < 4) {
-    match.players.push(createBot(match.players.length));
+    const botCount = match.players.filter(p => p.isBot).length;
+    match.players.push(createBot(botCount));
   }
 
-  const humanPlayers = match.players.filter(
-    player => !player.isBot
-  );
+  const humanPlayers = match.players.filter(p => !p.isBot);
 
   const shuffledRoles = [...ROLE_INFO].sort(
     () => Math.random() - 0.5
   );
 
+  // The Minister is always a human player.
   const ministerPlayer = humanPlayers[
     Math.floor(Math.random() * humanPlayers.length)
   ];
@@ -339,7 +319,6 @@ function startMatch(humans) {
     });
   }
 
-  // Opening investigation message
   sendChat(
     match,
     "Game Host",
@@ -347,22 +326,8 @@ function startMatch(humans) {
     true
   );
 
-  // First computer player welcomes everyone
-  const bots = match.players.filter(p => p.isBot);
-
-  if (bots.length) {
-    match.botReplyIndex = 1;
-
-    setTimeout(() => {
-      if (!match.finished) {
-        sendChat(
-          match,
-          bots[0].name,
-          "I'm ready to investigate! Minister, let's find the thief!"
-        );
-      }
-    }, 1800);
-  }
+  // Start the computer conversation.
+  scheduleBotTurn(match, 1800);
 }
 
 function startQueuedMatch() {
@@ -407,6 +372,11 @@ function removeFromQueue(socketId) {
 
 function finishRound(match, suspectId) {
   if (match.finished) return;
+
+  if (match.botTimer) {
+    clearTimeout(match.botTimer);
+    match.botTimer = null;
+  }
 
   const thief = match.players.find(p => p.role === "Thief");
   const minister = match.players.find(p => p.role === "Minister");
@@ -497,7 +467,6 @@ io.on("connection", socket => {
     }
   });
 
-  // One chat handler: computer players take turns replying.
   socket.on("sendChat", (data, ack) => {
     const match = matches.get(socket.data.matchId);
 
@@ -508,9 +477,7 @@ io.on("connection", socket => {
       });
     }
 
-    const player = match.players.find(
-      p => p.id === socket.id
-    );
+    const player = match.players.find(p => p.id === socket.id);
 
     const message = String(data?.message || "")
       .trim()
@@ -524,19 +491,12 @@ io.on("connection", socket => {
     }
 
     sendChat(match, player.name, message);
+    match.lastChatMessage = message;
+
     ack?.({ ok: true });
 
-    const bots = match.players.filter(p => p.isBot);
-
-    if (bots.length && Math.random() < 0.8) {
-      const bot = bots[match.botReplyIndex % bots.length];
-
-      match.botReplyIndex++;
-
-      setTimeout(() => {
-        botReply(match, bot, message);
-      }, 1000 + Math.random() * 2000);
-    }
+    // Let the next computer respond soon.
+    scheduleBotTurn(match, 1000 + Math.random() * 800);
   });
 
   socket.on("accuse", (data, ack) => {
@@ -549,9 +509,7 @@ io.on("connection", socket => {
       });
     }
 
-    const accuser = match.players.find(
-      p => p.id === socket.id
-    );
+    const accuser = match.players.find(p => p.id === socket.id);
 
     if (!accuser || accuser.role !== "Minister") {
       return ack?.({
@@ -607,7 +565,6 @@ io.on("connection", socket => {
 
     ack?.({ ok: true });
 
-    // Human scores remain; new bot scores start at zero.
     startMatch(humans);
   });
 
@@ -615,13 +572,13 @@ io.on("connection", socket => {
     const match = matches.get(socket.data.matchId);
 
     if (match) {
-      match.players = match.players.filter(
-        p => p.id !== socket.id
-      );
-
+      match.players = match.players.filter(p => p.id !== socket.id);
       socket.leave(match.id);
 
-      if (!match.players.length) {
+      const humansLeft = match.players.some(p => !p.isBot);
+
+      if (!humansLeft) {
+        if (match.botTimer) clearTimeout(match.botTimer);
         matches.delete(match.id);
       }
     }
@@ -637,11 +594,12 @@ io.on("connection", socket => {
     const match = matches.get(socket.data.matchId);
 
     if (match) {
-      match.players = match.players.filter(
-        p => p.id !== socket.id
-      );
+      match.players = match.players.filter(p => p.id !== socket.id);
 
-      if (!match.players.length) {
+      const humansLeft = match.players.some(p => !p.isBot);
+
+      if (!humansLeft) {
+        if (match.botTimer) clearTimeout(match.botTimer);
         matches.delete(match.id);
       }
     }
