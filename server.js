@@ -542,14 +542,55 @@ io.on("connection", socket => {
     finishRound(match, suspect.id);
   });
 
-  socket.on("playAgain", ack => {
-    const oldMatch = matches.get(socket.data.matchId);
+ 
+socket.on("playAgain", ack => {
+  const oldMatch = matches.get(socket.data.matchId);
 
-    if (!oldMatch || !oldMatch.finished) {
-      return ack?.({
-        ok: false,
-        error: "Finish the current round first."
-      });
+  if (!oldMatch || !oldMatch.finished) {
+    return ack?.({
+      ok: false,
+      error: "Finish the current round first."
+    });
+  }
+
+  // Keep only players whose connections are still active.
+  const humans = oldMatch.players
+    .filter(p => !p.isBot)
+    .filter(p => io.sockets.sockets.has(p.id))
+    .map(p => ({
+      id: p.id,
+      name: p.name
+    }));
+
+  if (!humans.length) {
+    return ack?.({
+      ok: false,
+      error: "No connected players found."
+    });
+  }
+
+  // Clean up the previous match for every human player.
+  for (const player of humans) {
+    const playerSocket = io.sockets.sockets.get(player.id);
+
+    if (playerSocket) {
+      playerSocket.leave(oldMatch.id);
+      playerSocket.data.matchId = null;
+    }
+  }
+
+  if (oldMatch.botTimer) {
+    clearTimeout(oldMatch.botTimer);
+  }
+
+  matches.delete(oldMatch.id);
+
+  // Create the new match before acknowledging success.
+  startMatch(humans);
+
+  ack?.({ ok: true });
+});
+
     }
 
     const humans = oldMatch.players
