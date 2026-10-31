@@ -255,6 +255,14 @@ function finishRound(match, suspectId) {
 }
 
 io.on("connection", socket => {
+    socket.on("getLeaderboard", (ack) => {
+    const leaderboard = [...scores.entries()]
+      .map(([name, score]) => ({ name, score }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+
+    ack?.({ ok: true, leaderboard });
+  });
   socket.on("playNow", (data, ack) => {
     if (socket.data.matchId) {
       return ack?.({ ok: false, error: "You are already in a match." });
