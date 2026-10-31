@@ -35,7 +35,29 @@ function safeText(value) {
 
 socket.on("connect", () => {
   myId = socket.id;
+  loadLeaderboard();
 });
+
+function loadLeaderboard() {
+  socket.emit("getLeaderboard", result => {
+    if (!result?.ok) return;
+
+    const container = $("homeLeaderboard");
+    if (!container) return;
+
+    if (!result.leaderboard.length) {
+      container.innerHTML = "<p>No scores yet. Be the first champion!</p>";
+      return;
+    }
+
+    container.innerHTML = result.leaderboard.map((player, index) => `
+      <div class="score">
+        <strong>${index + 1}. ${safeText(player.name)}</strong>
+        <span>🏆 ${Number(player.score) || 0} points</span>
+      </div>
+    `).join("");
+  });
+}
 
 socket.on("connect_error", () => {
   setMessage("homeMsg", "Connection problem. Please refresh and try again.");
