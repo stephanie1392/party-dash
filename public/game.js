@@ -117,12 +117,12 @@ socket.on("matchStarted", data => {
   $("roleHint").textContent = role.hint;
 
   $("chatMessages").innerHTML = "";
-  $("resultPanel").classList.add("hidden");
-  $("guessPanel").classList.add("hidden");
-  $("chatInput").disabled = false;
+ $("resultPanel").classList.add("hidden");
+$("chatInput").disabled = false;
 
-  showScreen("game");
-  renderPlayers(data.players || []);
+showScreen("game");
+renderPlayers(data.players || []);
+renderSuspects(data.players || []);
   setMessage("roundStatus", "Round " + (data.round || 1) + " has started. Ask questions and investigate!");
 });
 socket.on("gameUpdate", data => {
